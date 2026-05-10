@@ -1,0 +1,10 @@
+{
+  "createmechanized.configuration.items": "Item List",
+  "createmechanized.configuration.logDirtBlock": "Log Dirt Block",
+  "createmechanized.configuration.magicNumber": "Magic Number",
+  "createmechanized.configuration.magicNumberIntroduction": "Magic Number Text",
+  "createmechanized.configuration.section.createmechanized.common.toml": "Create: Mechanized Configs",
+  "createmechanized.configuration.section.createmechanized.common.toml.title": "Create: Mechanized Configs",
+  "createmechanized.configuration.title": "Create: Mechanized Configs",
+  "itemGroup.createmechanized": "Create: Mechanized"
+}
