@@ -88,6 +88,15 @@ Create: Mechanized description.
     ordering="NONE"
     side="BOTH"
 
+# Sable physics library — provides sublevel (moving block structure) pose/velocity data
+# used by the pilot helmet HUD when the player is on a sublevel.
+[[dependencies.${mod_id}]]
+    modId="sable"
+    type="required"
+    versionRange="${sable_version_range}"
+    ordering="AFTER"
+    side="BOTH"
+
 
 # Features are specific properties of the game environment, that you may want to declare you require. This example declares
 # that your mod requires GL version 3.2 or higher. Other features will be added. They are side aware so declaring this won't

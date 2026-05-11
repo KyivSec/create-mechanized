@@ -31,4 +31,15 @@ public class PilotHelmetWearableItem extends Item implements Equipable {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         return this.swapWithEquipmentSlot(this, level, player, hand);
     }
+
+    /**
+     * Returns {@code true} if the given player is currently wearing the pilot helmet in their head slot.
+     * Safe to call with a {@code null} player (returns {@code false}).
+     */
+    public static boolean isWornBy(Player player) {
+        if (player == null) {
+            return false;
+        }
+        return player.getItemBySlot(EquipmentSlot.HEAD).is(ModItems.PILOT_HELMET.get());
+    }
 }

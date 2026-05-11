@@ -1,8 +1,7 @@
 package kyivsec.createmechanized.client;
 
 import kyivsec.createmechanized.CreateMechanizedMod;
-import kyivsec.createmechanized.ModItems;
-import net.minecraft.world.entity.EquipmentSlot;
+import kyivsec.createmechanized.PilotHelmetWearableItem;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -17,9 +16,7 @@ public final class PilotHelmetHatLayerHandler {
     @SubscribeEvent
     public static void onRenderPlayerPre(RenderPlayerEvent.Pre event) {
         Player player = event.getEntity();
-        boolean wearingPilotHelmet = player.getItemBySlot(EquipmentSlot.HEAD).is(ModItems.PILOT_HELMET.get());
-
-        if (wearingPilotHelmet) {
+        if (PilotHelmetWearableItem.isWornBy(player)) {
             event.getRenderer().getModel().hat.visible = false;
         }
     }
