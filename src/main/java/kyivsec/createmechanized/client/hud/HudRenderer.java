@@ -28,12 +28,23 @@ import java.util.Locale;
 public final class HudRenderer {
 
     /* ------------ Palette ----------------------------------------------- */
-    /** Bright HUD green for primary text and lines. */
-    private static final int COLOR_HUD = 0xFF1AFF6E;
-    /** Dimmer HUD green for secondary/scale elements. */
-    private static final int COLOR_HUD_DIM = 0xCC1AFF6E;
-    /** Heading / waterline accent. */
-    private static final int COLOR_HUD_FAINT = 0x991AFF6E;
+    /**
+     * Three-tier palette derived from a single {@code 0xRRGGBB} tint set by
+     * {@link #setPalette(int)} at the start of each {@link #draw} call. Non-final
+     * because the helmet can be dyed at runtime; rendering is single-threaded so
+     * mutation is safe.
+     */
+    private static int COLOR_HUD = 0xFF000000 | kyivsec.createmechanized.PilotHelmetColor.DEFAULT_RGB;
+    private static int COLOR_HUD_DIM = 0xCC000000 | kyivsec.createmechanized.PilotHelmetColor.DEFAULT_RGB;
+    private static int COLOR_HUD_FAINT = 0x99000000 | kyivsec.createmechanized.PilotHelmetColor.DEFAULT_RGB;
+
+    /** Updates the three palette tiers from a single 0xRRGGBB color. */
+    private static void setPalette(int rgb) {
+        int rgbOnly = rgb & 0xFFFFFF;
+        COLOR_HUD = 0xFF000000 | rgbOnly;
+        COLOR_HUD_DIM = 0xCC000000 | rgbOnly;
+        COLOR_HUD_FAINT = 0x99000000 | rgbOnly;
+    }
 
     /* ------------ Geometry constants ------------------------------------ */
     /** Pixels per radian of pitch. ~3.5 px/° puts ladder rungs at sensible spacing. */
@@ -58,7 +69,8 @@ public final class HudRenderer {
     /*  Entry point                                                          */
     /* ==================================================================== */
 
-    public static void draw(GuiGraphics graphics, FlightData data) {
+    public static void draw(GuiGraphics graphics, FlightData data, int colorRgb) {
+        setPalette(colorRgb);
         int w = graphics.guiWidth();
         int h = graphics.guiHeight();
         int cx = w / 2;

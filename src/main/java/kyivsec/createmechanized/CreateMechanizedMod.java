@@ -27,6 +27,8 @@ public class CreateMechanizedMod {
         modEventBus.addListener(DataGenerators::gatherData);
         modEventBus.addListener(this::addCreative);
         ModItems.register(modEventBus);
+        ModDataComponents.register(modEventBus);
+        ModRecipeSerializers.register(modEventBus);
 
         NeoForge.EVENT_BUS.register(this);
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);

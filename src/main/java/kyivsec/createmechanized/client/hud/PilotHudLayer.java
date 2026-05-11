@@ -11,6 +11,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Pilot HUD overlay layer. Registered against the in-game GUI stack via
@@ -51,7 +53,10 @@ public final class PilotHudLayer implements LayeredDraw.Layer {
                 ? FlightDataSource.fromSubLevel(sub, partialTick)
                 : FlightDataSource.fromPlayer(player);
 
-        HudRenderer.draw(graphics, data);
+        ItemStack helmetStack = player.getItemBySlot(EquipmentSlot.HEAD);
+        int colorRgb = PilotHelmetWearableItem.getColorRgb(helmetStack);
+
+        HudRenderer.draw(graphics, data, colorRgb);
     }
 
     /**
