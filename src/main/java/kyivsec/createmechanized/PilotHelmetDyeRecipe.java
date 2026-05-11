@@ -8,20 +8,6 @@ import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
 
-/**
- * Custom shapeless crafting recipe: 1× pilot helmet + 1× dye → tinted pilot helmet.
- *
- * <p>Match rules:</p>
- * <ul>
- *     <li>Exactly one {@link ModItems#PILOT_HELMET} stack on the grid.</li>
- *     <li>Exactly one {@link net.minecraft.world.item.DyeItem} whose color is in
- *     the {@link PilotHelmetColor} palette.</li>
- *     <li>No other items.</li>
- * </ul>
- *
- * <p>The assembled output is a single-count helmet stack with its
- * {@link ModDataComponents#PILOT_HELMET_COLOR} component set to the dye's RGB.</p>
- */
 public class PilotHelmetDyeRecipe extends CustomRecipe {
 
     public PilotHelmetDyeRecipe(CraftingBookCategory category) {
@@ -38,12 +24,12 @@ public class PilotHelmetDyeRecipe extends CustomRecipe {
             if (stack.isEmpty()) continue;
 
             if (stack.is(ModItems.PILOT_HELMET.get())) {
-                if (!helmet.isEmpty()) return false; // more than one helmet
+                if (!helmet.isEmpty()) return false;
                 helmet = stack;
             } else {
                 PilotHelmetColor c = PilotHelmetColor.fromDyeItem(stack.getItem());
-                if (c == null) return false;        // unrecognised item
-                if (color != null) return false;    // more than one dye
+                if (c == null) return false;
+                if (color != null) return false;
                 color = c;
             }
         }

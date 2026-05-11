@@ -39,10 +39,6 @@ public class PilotHelmetWearableItem extends Item implements Equipable {
         return this.swapWithEquipmentSlot(this, level, player, hand);
     }
 
-    /**
-     * Returns {@code true} if the given player is currently wearing the pilot helmet in their head slot.
-     * Safe to call with a {@code null} player (returns {@code false}).
-     */
     public static boolean isWornBy(Player player) {
         if (player == null) {
             return false;
@@ -50,13 +46,6 @@ public class PilotHelmetWearableItem extends Item implements Equipable {
         return player.getItemBySlot(EquipmentSlot.HEAD).is(ModItems.PILOT_HELMET.get());
     }
 
-    /**
-     * Reads the HUD tint color from a helmet stack's {@link ModDataComponents#PILOT_HELMET_COLOR}
-     * component. Falls back to {@link PilotHelmetColor#DEFAULT_RGB} (the original HUD green) when the
-     * stack is empty, isn't a pilot helmet, or has no color component set.
-     *
-     * @return RGB as 0xRRGGBB (alpha must be supplied by the caller)
-     */
     public static int getColorRgb(ItemStack stack) {
         if (stack == null || stack.isEmpty() || !stack.is(ModItems.PILOT_HELMET.get())) {
             return PilotHelmetColor.DEFAULT_RGB;
@@ -67,16 +56,14 @@ public class PilotHelmetWearableItem extends Item implements Equipable {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        Integer rgb = stack.get(ModDataComponents.PILOT_HELMET_COLOR.get());
-        if (rgb == null) {
-            return;
-        }
+        Integer stored = stack.get(ModDataComponents.PILOT_HELMET_COLOR.get());
+        int rgb = (stored != null) ? (stored & 0xFFFFFF) : PilotHelmetColor.DEFAULT_RGB;
         PilotHelmetColor entry = PilotHelmetColor.fromRgb(rgb);
-        String name = (entry != null) ? entry.displayName : String.format("#%06X", rgb & 0xFFFFFF);
+        String name = (entry != null) ? entry.displayName : String.format("#%06X", rgb);
 
         Component prefix = Component.literal("Color: ").withStyle(ChatFormatting.GRAY);
         Component value = Component.literal(name)
-                .withStyle(Style.EMPTY.withColor(TextColor.fromRgb(rgb & 0xFFFFFF)));
+                .withStyle(Style.EMPTY.withColor(TextColor.fromRgb(rgb)));
         tooltip.add(Component.empty().append(prefix).append(value));
     }
 }

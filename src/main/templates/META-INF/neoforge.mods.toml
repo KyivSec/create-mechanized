@@ -97,6 +97,14 @@ Create: Mechanized description.
     ordering="AFTER"
     side="BOTH"
 
+# Just Enough Items — optional, only used to expose the helmet dye recipe in the JEI UI.
+[[dependencies.${mod_id}]]
+    modId="jei"
+    type="optional"
+    versionRange="${jei_version_range}"
+    ordering="AFTER"
+    side="CLIENT"
+
 
 # Features are specific properties of the game environment, that you may want to declare you require. This example declares
 # that your mod requires GL version 3.2 or higher. Other features will be added. They are side aware so declaring this won't

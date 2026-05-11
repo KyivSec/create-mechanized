@@ -7,7 +7,6 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-/** Registry of mod-defined {@link RecipeSerializer recipe serializers}. */
 public final class ModRecipeSerializers {
 
     public static final DeferredRegister<RecipeSerializer<?>> SERIALIZERS =

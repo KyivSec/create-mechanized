@@ -37,6 +37,7 @@ repositories {
             includeGroup "foundry.veil"
             includeGroup "gg.moonflower"
             includeGroup "io.github.ocelot"
+            includeGroup "mezz.jei"
         }
     }
     maven {
@@ -115,6 +116,10 @@ configurations {
 
 dependencies {
     implementation "dev.ryanhcode.sable:sable-neoforge-1.21.1:${sable_version}"
+
+    // JEI — compile-time only (the `@JeiPlugin` class isn't loaded when JEI is absent at runtime).
+    compileOnly "mezz.jei:jei-1.21.1-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-1.21.1-neoforge-api:${jei_version}"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
@@ -128,6 +133,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_license            : mod_license,
             mod_version            : mod_version,
             sable_version_range    : sable_version_range,
+            jei_version_range      : jei_version_range,
     ]
     inputs.properties replaceProperties
     expand replaceProperties
