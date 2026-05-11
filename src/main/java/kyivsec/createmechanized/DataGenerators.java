@@ -17,6 +17,7 @@ public final class DataGenerators {
             @Override
             protected void addTranslations() {
                 add("itemGroup.createmechanized", "Create: Mechanized");
+                add("item.createmechanized.pilot_helmet", "Pilot Helmet");
                 add("createmechanized.configuration.title", "Create: Mechanized Configs");
                 add("createmechanized.configuration.section.createmechanized.common.toml", "Create: Mechanized Configs");
                 add("createmechanized.configuration.section.createmechanized.common.toml.title", "Create: Mechanized Configs");
