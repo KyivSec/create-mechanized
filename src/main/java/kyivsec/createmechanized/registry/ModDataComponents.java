@@ -2,6 +2,7 @@ package kyivsec.createmechanized.registry;
 
 import com.mojang.serialization.Codec;
 import kyivsec.createmechanized.CreateMechanizedMod;
+import kyivsec.createmechanized.content.pilot_helmet.TrackedContainerList;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -21,6 +22,14 @@ public final class ModDataComponents {
                     builder -> builder
                             .persistent(Codec.INT)
                             .networkSynchronized(ByteBufCodecs.INT)
+            );
+
+    public static final Supplier<DataComponentType<TrackedContainerList>> TRACKED_CONTAINERS =
+            COMPONENTS.registerComponentType(
+                    "tracked_containers",
+                    builder -> builder
+                            .persistent(TrackedContainerList.CODEC)
+                            .networkSynchronized(TrackedContainerList.STREAM_CODEC)
             );
 
     private ModDataComponents() {

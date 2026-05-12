@@ -9,15 +9,14 @@ import java.util.Locale;
 
 public final class HudRenderer {
 
-    private static int COLOR_HUD = 0xFF000000 | kyivsec.createmechanized.CreateMechanizedConfig.DEFAULT_RGB;
-    private static int COLOR_HUD_DIM = 0xCC000000 | kyivsec.createmechanized.CreateMechanizedConfig.DEFAULT_RGB;
-    private static int COLOR_HUD_FAINT = 0x99000000 | kyivsec.createmechanized.CreateMechanizedConfig.DEFAULT_RGB;
+    public record Palette(int primary, int dim, int faint) {
+        public static Palette fromRgb(int rgb) {
+            int rgbOnly = rgb & 0xFFFFFF;
+            return new Palette(0xFF000000 | rgbOnly, 0xCC000000 | rgbOnly, 0x99000000 | rgbOnly);
+        }
+    }
 
-    private static void setPalette(int rgb) {
-        int rgbOnly = rgb & 0xFFFFFF;
-        COLOR_HUD = 0xFF000000 | rgbOnly;
-        COLOR_HUD_DIM = 0xCC000000 | rgbOnly;
-        COLOR_HUD_FAINT = 0x99000000 | rgbOnly;
+    private record Rung(float rungRad, int halfLength, boolean labelled, String label, boolean dashed, int tickSign) {
     }
 
     private static final float PIXELS_PER_RAD = 200.0f;
@@ -28,102 +27,114 @@ public final class HudRenderer {
     private static final float BANK_ARC_HALF = (float) Math.toRadians(60.0);
     private static final int FPM_RADIUS = 6;
 
+    private static final int[] BANK_MAJOR_DEG = {-60, -45, -30, -20, -10, 0, 10, 20, 30, 45, 60};
+
+    private static final Rung[] LADDER_RUNGS = buildLadderRungs();
+
+    private static Rung[] buildLadderRungs() {
+        Rung[] arr = new Rung[1 + 18 * 2];
+        arr[0] = new Rung(0.0f, 90, true, "0", false, 1);
+        int idx = 1;
+        for (int deg = 5; deg <= 90; deg += 5) {
+            float theta = (float) Math.toRadians(deg);
+            boolean labelled = (deg % 10 == 0);
+            int halfLength = labelled ? 55 : 28;
+            String label = labelled ? Integer.toString(deg) : "";
+            arr[idx++] = new Rung(theta,  halfLength, labelled, label, false, 1);
+            arr[idx++] = new Rung(-theta, halfLength, labelled, label, true,  -1);
+        }
+        return arr;
+    }
+
     private HudRenderer() {
     }
 
     public static void draw(GuiGraphics graphics, FlightData data, int colorRgb) {
-        setPalette(colorRgb);
+        Palette p = Palette.fromRgb(colorRgb);
         int w = graphics.guiWidth();
         int h = graphics.guiHeight();
         int cx = w / 2;
         int cy = h / 2;
         Font font = Minecraft.getInstance().font;
 
-        drawBoresight(graphics, cx, cy);
-        drawAltitudeBox(graphics, font, w, cy, data.altitude());
+        drawBoresight(graphics, cx, cy, p);
+        drawAltitudeBox(graphics, font, w, cy, data.altitude(), p);
 
         if (!data.minimal()) {
-            drawSpeedBox(graphics, font, cy, data.speedMs());
-            drawPitchLadder(graphics, font, cx, cy, data.pitchRad(), data.rollRad());
-            drawBankScale(graphics, cx, cy, data.rollRad());
-            drawHeadingTape(graphics, font, cx, data.headingRad());
-            drawFlightPathMarker(graphics, cx, cy, data);
+            drawSpeedBox(graphics, font, cy, data.speedMs(), p);
+            drawPitchLadder(graphics, font, cx, cy, data.pitchRad(), data.rollRad(), p);
+            drawBankScale(graphics, cx, cy, data.rollRad(), p);
+            drawHeadingTape(graphics, font, cx, data.headingRad(), p);
+            drawFlightPathMarker(graphics, cx, cy, data, p);
         }
     }
 
-    private static void drawBoresight(GuiGraphics g, int cx, int cy) {
-        g.fill(cx - 14, cy, cx - 6, cy + 1, COLOR_HUD);
-        g.fill(cx - 6, cy, cx - 5, cy + 4, COLOR_HUD);
-        g.fill(cx + 6, cy, cx + 14, cy + 1, COLOR_HUD);
-        g.fill(cx + 5, cy, cx + 6, cy + 4, COLOR_HUD);
-        g.fill(cx - 1, cy, cx + 1, cy + 1, COLOR_HUD);
+    private static void drawBoresight(GuiGraphics g, int cx, int cy, Palette p) {
+        g.fill(cx - 14, cy, cx - 6, cy + 1, p.primary());
+        g.fill(cx - 6, cy, cx - 5, cy + 4, p.primary());
+        g.fill(cx + 6, cy, cx + 14, cy + 1, p.primary());
+        g.fill(cx + 5, cy, cx + 6, cy + 4, p.primary());
+        g.fill(cx - 1, cy, cx + 1, cy + 1, p.primary());
     }
 
-    private static void drawAltitudeBox(GuiGraphics g, Font font, int screenWidth, int cy, double altitude) {
+    private static void drawAltitudeBox(GuiGraphics g, Font font, int screenWidth, int cy, double altitude, Palette p) {
         String text = String.format(Locale.ROOT, "%5.0f", altitude);
         String label = "ALT M";
         int boxW = Math.max(font.width(text), font.width(label)) + 12;
         int boxH = 22;
         int x = screenWidth - boxW - 16;
         int y = cy - boxH / 2;
-        drawBracket(g, x, y, boxW, boxH, true);
-        g.drawString(font, text, x + 6, y + 3, COLOR_HUD, false);
-        g.drawString(font, label, x + 6, y + 12, COLOR_HUD_DIM, false);
+        drawBracket(g, x, y, boxW, boxH, true, p);
+        g.drawString(font, text, x + 6, y + 3, p.primary(), false);
+        g.drawString(font, label, x + 6, y + 12, p.dim(), false);
     }
 
-    private static void drawSpeedBox(GuiGraphics g, Font font, int cy, double ms) {
+    private static void drawSpeedBox(GuiGraphics g, Font font, int cy, double ms, Palette p) {
         String text = String.format(Locale.ROOT, "%5.1f", ms);
         String label = "M/S";
         int boxW = Math.max(font.width(text), font.width(label)) + 12;
         int boxH = 22;
         int x = 16;
         int y = cy - boxH / 2;
-        drawBracket(g, x, y, boxW, boxH, false);
-        g.drawString(font, text, x + 6, y + 3, COLOR_HUD, false);
-        g.drawString(font, label, x + 6, y + 12, COLOR_HUD_DIM, false);
+        drawBracket(g, x, y, boxW, boxH, false, p);
+        g.drawString(font, text, x + 6, y + 3, p.primary(), false);
+        g.drawString(font, label, x + 6, y + 12, p.dim(), false);
     }
 
-    private static void drawBracket(GuiGraphics g, int x, int y, int w, int h, boolean rightFacing) {
-        g.fill(x, y, x + w, y + 1, COLOR_HUD);
-        g.fill(x, y + h - 1, x + w, y + h, COLOR_HUD);
+    private static void drawBracket(GuiGraphics g, int x, int y, int w, int h, boolean rightFacing, Palette p) {
+        g.fill(x, y, x + w, y + 1, p.primary());
+        g.fill(x, y + h - 1, x + w, y + h, p.primary());
         if (rightFacing) {
-            g.fill(x + w - 1, y, x + w, y + h, COLOR_HUD);
-            g.fill(x, y, x + 1, y + 4, COLOR_HUD);
-            g.fill(x, y + h - 4, x + 1, y + h, COLOR_HUD);
+            g.fill(x + w - 1, y, x + w, y + h, p.primary());
+            g.fill(x, y, x + 1, y + 4, p.primary());
+            g.fill(x, y + h - 4, x + 1, y + h, p.primary());
         } else {
-            g.fill(x, y, x + 1, y + h, COLOR_HUD);
-            g.fill(x + w - 1, y, x + w, y + 4, COLOR_HUD);
-            g.fill(x + w - 1, y + h - 4, x + w, y + h, COLOR_HUD);
+            g.fill(x, y, x + 1, y + h, p.primary());
+            g.fill(x + w - 1, y, x + w, y + 4, p.primary());
+            g.fill(x + w - 1, y + h - 4, x + w, y + h, p.primary());
         }
     }
 
-    private static void drawPitchLadder(GuiGraphics g, Font font, int cx, int cy, float pitchRad, float rollRad) {
-        drawLadderRung(g, font, cx, cy, pitchRad, rollRad, 0.0f, 90, true, false);
-        for (int deg = 5; deg <= 90; deg += 5) {
-            float thetaPos = (float) Math.toRadians(deg);
-            float thetaNeg = -thetaPos;
-            boolean labelled = (deg % 10 == 0);
-            int halfLength = labelled ? 55 : 28;
-            drawLadderRung(g, font, cx, cy, pitchRad, rollRad, thetaPos, halfLength, labelled, false);
-            drawLadderRung(g, font, cx, cy, pitchRad, rollRad, thetaNeg, halfLength, labelled, true);
+    private static void drawPitchLadder(GuiGraphics g, Font font, int cx, int cy, float pitchRad, float rollRad, Palette p) {
+        float cos = Mth.cos(-rollRad);
+        float sin = Mth.sin(-rollRad);
+        for (Rung r : LADDER_RUNGS) {
+            drawLadderRung(g, font, cx, cy, pitchRad, cos, sin, r, p);
         }
     }
 
     private static void drawLadderRung(GuiGraphics g, Font font,
-                                       int cx, int cy, float pitchRad, float rollRad,
-                                       float rungRad, int halfLength,
-                                       boolean labelled, boolean dashed) {
-        float vOff = (rungRad - pitchRad) * PIXELS_PER_RAD;
+                                       int cx, int cy, float pitchRad,
+                                       float cos, float sin, Rung r, Palette p) {
+        float vOff = (r.rungRad() - pitchRad) * PIXELS_PER_RAD;
 
         float fade = 1.0f - Mth.clamp(Math.abs(vOff) / (float) PITCH_BAND_HALF, 0.0f, 1.0f);
         if (fade <= 0.02f) return;
-        int color = applyAlpha(COLOR_HUD, fade);
-
-        float cos = Mth.cos(-rollRad);
-        float sin = Mth.sin(-rollRad);
+        int color = applyAlpha(p.primary(), fade);
 
         int gap = 14;
-        if (dashed) {
+        int halfLength = r.halfLength();
+        if (r.dashed()) {
             drawDashedSegmentRotated(g, cx, cy, -halfLength, vOff, -gap, vOff, cos, sin, 4, 4, color);
             drawDashedSegmentRotated(g, cx, cy, gap, vOff, halfLength, vOff, cos, sin, 4, 4, color);
         } else {
@@ -131,38 +142,34 @@ public final class HudRenderer {
             drawSegmentRotated(g, cx, cy, gap, vOff, halfLength, vOff, cos, sin, color);
         }
 
-        int tickSign = (rungRad >= 0.0f) ? 1 : -1;
+        int tickSign = r.tickSign();
         drawSegmentRotated(g, cx, cy, -halfLength, vOff, -halfLength, vOff + 4 * tickSign, cos, sin, color);
         drawSegmentRotated(g, cx, cy, halfLength, vOff, halfLength, vOff + 4 * tickSign, cos, sin, color);
 
-        if (labelled) {
-            int deg = Math.round((float) Math.toDegrees(rungRad));
-            String label = String.valueOf(Math.abs(deg));
-            int textColor = applyAlpha(COLOR_HUD, fade);
-            int lw = font.width(label);
+        if (r.labelled()) {
+            int lw = font.width(r.label());
             int[] leftAnchor = rotate(cx, cy, -halfLength - lw - 3, vOff - 3, cos, sin);
             int[] rightAnchor = rotate(cx, cy, halfLength + 3, vOff - 3, cos, sin);
-            g.drawString(font, label, leftAnchor[0], leftAnchor[1], textColor, false);
-            g.drawString(font, label, rightAnchor[0], rightAnchor[1], textColor, false);
+            g.drawString(font, r.label(), leftAnchor[0], leftAnchor[1], color, false);
+            g.drawString(font, r.label(), rightAnchor[0], rightAnchor[1], color, false);
         }
     }
 
-    private static void drawBankScale(GuiGraphics g, int cx, int cy, float rollRad) {
+    private static void drawBankScale(GuiGraphics g, int cx, int cy, float rollRad, Palette p) {
         for (float a = -BANK_ARC_HALF; a <= BANK_ARC_HALF; a += (float) Math.toRadians(2.0)) {
             int px = cx + Math.round(Mth.sin(a) * BANK_ARC_RADIUS);
             int py = cy - Math.round(Mth.cos(a) * BANK_ARC_RADIUS);
-            g.fill(px, py, px + 1, py + 1, COLOR_HUD_FAINT);
+            g.fill(px, py, px + 1, py + 1, p.faint());
         }
 
-        int[] majorDeg = {-60, -45, -30, -20, -10, 0, 10, 20, 30, 45, 60};
-        for (int deg : majorDeg) {
+        for (int deg : BANK_MAJOR_DEG) {
             float a = (float) Math.toRadians(deg);
             int outer = BANK_ARC_RADIUS + (deg == 0 ? 8 : (Math.abs(deg) >= 30 ? 6 : 4));
             int x1 = cx + Math.round(Mth.sin(a) * BANK_ARC_RADIUS);
             int y1 = cy - Math.round(Mth.cos(a) * BANK_ARC_RADIUS);
             int x2 = cx + Math.round(Mth.sin(a) * outer);
             int y2 = cy - Math.round(Mth.cos(a) * outer);
-            drawLineThin(g, x1, y1, x2, y2, COLOR_HUD);
+            drawLineThin(g, x1, y1, x2, y2, p.primary());
         }
 
         float ptr = Mth.clamp(rollRad, -BANK_ARC_HALF, BANK_ARC_HALF);
@@ -176,15 +183,15 @@ public final class HudRenderer {
         int base1Y = cy - Math.round((pCos * baseR) + (pSin * 4));
         int base2X = cx + Math.round((pSin * baseR) + (pCos * 4));
         int base2Y = cy - Math.round((pCos * baseR) - (pSin * 4));
-        fillTriangle(g, tipX, tipY, base1X, base1Y, base2X, base2Y, COLOR_HUD);
+        fillTriangle(g, tipX, tipY, base1X, base1Y, base2X, base2Y, p.primary());
     }
 
-    private static void drawHeadingTape(GuiGraphics g, Font font, int cx, float headingRad) {
+    private static void drawHeadingTape(GuiGraphics g, Font font, int cx, float headingRad, Palette p) {
         int tapeY = 21;
         int tickBaseY = tapeY + 4;
         float headingDeg = (float) Math.toDegrees(headingRad);
 
-        g.fill(cx - HDG_TAPE_HALF_WIDTH - 1, tapeY, cx + HDG_TAPE_HALF_WIDTH + 1, tapeY + 1, COLOR_HUD_FAINT);
+        g.fill(cx - HDG_TAPE_HALF_WIDTH - 1, tapeY, cx + HDG_TAPE_HALF_WIDTH + 1, tapeY + 1, p.faint());
 
         int minDeg = (int) Math.floor(headingDeg - (HDG_TAPE_HALF_WIDTH / (float) HDG_TAPE_PX_PER_DEG));
         int maxDeg = (int) Math.ceil(headingDeg + (HDG_TAPE_HALF_WIDTH / (float) HDG_TAPE_PX_PER_DEG));
@@ -194,15 +201,15 @@ public final class HudRenderer {
             if (x < cx - HDG_TAPE_HALF_WIDTH || x > cx + HDG_TAPE_HALF_WIDTH) continue;
             boolean major = (normalised % 30 == 0);
             int tickH = major ? 6 : 3;
-            g.fill(x, tickBaseY, x + 1, tickBaseY + tickH, COLOR_HUD);
+            g.fill(x, tickBaseY, x + 1, tickBaseY + tickH, p.primary());
             if (major) {
                 String label = compassLabel(normalised);
                 int lw = font.width(label);
-                g.drawString(font, label, x - lw / 2, tickBaseY + tickH + 1, COLOR_HUD_DIM, false);
+                g.drawString(font, label, x - lw / 2, tickBaseY + tickH + 1, p.dim(), false);
             }
         }
 
-        fillTriangle(g, cx, tapeY - 1, cx - 4, tapeY - 7, cx + 4, tapeY - 7, COLOR_HUD);
+        fillTriangle(g, cx, tapeY - 1, cx - 4, tapeY - 7, cx + 4, tapeY - 7, p.primary());
 
         String hdg = String.format(Locale.ROOT, "%03d", ((int) Math.round(headingDeg) % 360 + 360) % 360);
         int hw = font.width(hdg);
@@ -210,11 +217,11 @@ public final class HudRenderer {
         int boxY = tapeY - 18;
         int boxW = hw + 8;
         int boxH = 12;
-        g.fill(boxX, boxY, boxX + boxW, boxY + 1, COLOR_HUD);
-        g.fill(boxX, boxY + boxH - 1, boxX + boxW, boxY + boxH, COLOR_HUD);
-        g.fill(boxX, boxY, boxX + 1, boxY + boxH, COLOR_HUD);
-        g.fill(boxX + boxW - 1, boxY, boxX + boxW, boxY + boxH, COLOR_HUD);
-        g.drawString(font, hdg, boxX + 4, boxY + 2, COLOR_HUD, false);
+        g.fill(boxX, boxY, boxX + boxW, boxY + 1, p.primary());
+        g.fill(boxX, boxY + boxH - 1, boxX + boxW, boxY + boxH, p.primary());
+        g.fill(boxX, boxY, boxX + 1, boxY + boxH, p.primary());
+        g.fill(boxX + boxW - 1, boxY, boxX + boxW, boxY + boxH, p.primary());
+        g.drawString(font, hdg, boxX + 4, boxY + 2, p.primary(), false);
     }
 
     private static String compassLabel(int deg) {
@@ -227,7 +234,7 @@ public final class HudRenderer {
         };
     }
 
-    private static void drawFlightPathMarker(GuiGraphics g, int cx, int cy, FlightData d) {
+    private static void drawFlightPathMarker(GuiGraphics g, int cx, int cy, FlightData d, Palette p) {
         double fwd = d.bodyVelZ();
         double speed = Math.sqrt(d.bodyVelX() * d.bodyVelX() + d.bodyVelY() * d.bodyVelY() + fwd * fwd);
         if (speed < 1.0e-4) return;
@@ -243,11 +250,11 @@ public final class HudRenderer {
         int fx = cx + (int) Math.round(yawDrift * PIXELS_PER_RAD);
         int fy = cy - (int) Math.round(pitchDrift * PIXELS_PER_RAD);
 
-        drawHollowRect(g, fx - FPM_RADIUS, fy - FPM_RADIUS, FPM_RADIUS * 2 + 1, FPM_RADIUS * 2 + 1, COLOR_HUD);
-        g.fill(fx - FPM_RADIUS - 8, fy, fx - FPM_RADIUS - 1, fy + 1, COLOR_HUD);
-        g.fill(fx + FPM_RADIUS + 1, fy, fx + FPM_RADIUS + 8, fy + 1, COLOR_HUD);
-        g.fill(fx, fy - FPM_RADIUS - 4, fx + 1, fy - FPM_RADIUS - 1, COLOR_HUD);
-        g.fill(fx, fy, fx + 1, fy + 1, COLOR_HUD);
+        drawHollowRect(g, fx - FPM_RADIUS, fy - FPM_RADIUS, FPM_RADIUS * 2 + 1, FPM_RADIUS * 2 + 1, p.primary());
+        g.fill(fx - FPM_RADIUS - 8, fy, fx - FPM_RADIUS - 1, fy + 1, p.primary());
+        g.fill(fx + FPM_RADIUS + 1, fy, fx + FPM_RADIUS + 8, fy + 1, p.primary());
+        g.fill(fx, fy - FPM_RADIUS - 4, fx + 1, fy - FPM_RADIUS - 1, p.primary());
+        g.fill(fx, fy, fx + 1, fy + 1, p.primary());
     }
 
     private static void drawHollowRect(GuiGraphics g, int x, int y, int w, int h, int color) {
@@ -333,5 +340,15 @@ public final class HudRenderer {
         int a = (argb >>> 24) & 0xFF;
         int scaled = Mth.clamp(Math.round(a * factor), 0, 255);
         return (scaled << 24) | (argb & 0x00FFFFFF);
+    }
+
+    public static void drawProgressBar(GuiGraphics g, int x, int y, int w, int h, float fraction, Palette p) {
+        fraction = Mth.clamp(fraction, 0.0f, 1.0f);
+        drawHollowRect(g, x, y, w, h, p.dim());
+        int innerW = Math.max(0, w - 2);
+        int filledW = Math.round(fraction * innerW);
+        if (filledW > 0 && h > 2) {
+            g.fill(x + 1, y + 1, x + 1 + filledW, y + h - 1, p.primary());
+        }
     }
 }
