@@ -1,5 +1,7 @@
-package kyivsec.createmechanized;
+package kyivsec.createmechanized.registry;
 
+import kyivsec.createmechanized.CreateMechanizedMod;
+import kyivsec.createmechanized.content.pilot_helmet.PilotHelmetDyeRecipe;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;

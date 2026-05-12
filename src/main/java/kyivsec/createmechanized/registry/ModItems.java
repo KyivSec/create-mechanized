@@ -1,5 +1,7 @@
-package kyivsec.createmechanized;
+package kyivsec.createmechanized.registry;
 
+import kyivsec.createmechanized.CreateMechanizedMod;
+import kyivsec.createmechanized.content.pilot_helmet.PilotHelmetWearableItem;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;

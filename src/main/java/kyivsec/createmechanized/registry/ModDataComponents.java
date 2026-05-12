@@ -1,6 +1,7 @@
-package kyivsec.createmechanized;
+package kyivsec.createmechanized.registry;
 
 import com.mojang.serialization.Codec;
+import kyivsec.createmechanized.CreateMechanizedMod;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.ByteBufCodecs;

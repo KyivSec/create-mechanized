@@ -1,26 +1,29 @@
 package kyivsec.createmechanized.compat.jei;
 
+import kyivsec.createmechanized.CreateMechanizedConfig;
 import kyivsec.createmechanized.CreateMechanizedMod;
-import kyivsec.createmechanized.ModDataComponents;
-import kyivsec.createmechanized.ModItems;
-import kyivsec.createmechanized.PilotHelmetColor;
+import kyivsec.createmechanized.registry.ModDataComponents;
+import kyivsec.createmechanized.registry.ModItems;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.registration.IRecipeRegistration;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.DyeColor;
-import net.minecraft.world.item.DyeItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @JeiPlugin
 public class JeiCompatPlugin implements IModPlugin {
@@ -37,13 +40,20 @@ public class JeiCompatPlugin implements IModPlugin {
     public void registerRecipes(IRecipeRegistration registration) {
         ItemStack baseHelmet = new ItemStack(ModItems.PILOT_HELMET.get());
 
-        List<RecipeHolder<CraftingRecipe>> recipes = new ArrayList<>(PilotHelmetColor.values().length);
-        for (PilotHelmetColor color : PilotHelmetColor.values()) {
-            DyeColor dyeColor = DyeColor.byName(color.id, DyeColor.WHITE);
-            ItemStack dyeStack = new ItemStack(DyeItem.byColor(dyeColor));
+        List<RecipeHolder<CraftingRecipe>> recipes = new ArrayList<>(CreateMechanizedConfig.HELMET_DYE_COLORS.size());
+        for (Map.Entry<String, ModConfigSpec.ConfigValue<String>> e : CreateMechanizedConfig.HELMET_DYE_COLORS.entrySet()) {
+            String dyeId = e.getKey();
+            Integer rgb = CreateMechanizedConfig.getColorRgb(dyeId);
+            if (rgb == null) continue;
 
+            ResourceLocation rl = ResourceLocation.tryParse(dyeId);
+            if (rl == null) continue;
+            Item dyeItem = BuiltInRegistries.ITEM.get(rl);
+            if (dyeItem == Items.AIR) continue;
+
+            ItemStack dyeStack = new ItemStack(dyeItem);
             ItemStack result = baseHelmet.copy();
-            result.set(ModDataComponents.PILOT_HELMET_COLOR.get(), color.rgb);
+            result.set(ModDataComponents.PILOT_HELMET_COLOR.get(), rgb);
 
             NonNullList<Ingredient> ingredients = NonNullList.of(
                     Ingredient.EMPTY,
@@ -57,11 +67,11 @@ public class JeiCompatPlugin implements IModPlugin {
                     ingredients
             );
 
-            ResourceLocation id = ResourceLocation.fromNamespaceAndPath(
+            ResourceLocation recipeId = ResourceLocation.fromNamespaceAndPath(
                     CreateMechanizedMod.MODID,
-                    "jei_pilot_helmet_dye_" + color.id
+                    "jei_pilot_helmet_dye_" + rl.getPath()
             );
-            recipes.add(new RecipeHolder<>(id, shapeless));
+            recipes.add(new RecipeHolder<>(recipeId, shapeless));
         }
 
         registration.addRecipes(RecipeTypes.CRAFTING, recipes);

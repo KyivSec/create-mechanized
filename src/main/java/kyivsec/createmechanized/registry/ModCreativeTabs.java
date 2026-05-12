@@ -1,5 +1,6 @@
-package kyivsec.createmechanized;
+package kyivsec.createmechanized.registry;
 
+import kyivsec.createmechanized.CreateMechanizedMod;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;

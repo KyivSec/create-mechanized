@@ -4,7 +4,7 @@ import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.companion.ClientSubLevelAccess;
 import dev.ryanhcode.sable.companion.SubLevelAccess;
 import kyivsec.createmechanized.CreateMechanizedMod;
-import kyivsec.createmechanized.PilotHelmetWearableItem;
+import kyivsec.createmechanized.content.pilot_helmet.PilotHelmetWearableItem;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -36,9 +36,14 @@ public final class PilotHudLayer implements LayeredDraw.Layer {
         float partialTick = delta.getGameTimeDeltaPartialTick(true);
         ClientSubLevelAccess sub = tryResolveSubLevel(player);
 
-        FlightData data = (sub != null)
-                ? FlightDataSource.fromSubLevel(sub, partialTick)
-                : FlightDataSource.fromPlayer(player);
+        FlightData data;
+        if (sub != null) {
+            data = FlightDataSource.fromSubLevel(sub, partialTick);
+        } else if (PilotHelmetWearableItem.hasElytraEquipped(player)) {
+            data = FlightDataSource.fromPlayerFlying(player, partialTick);
+        } else {
+            data = FlightDataSource.fromPlayer(player);
+        }
 
         ItemStack helmetStack = player.getItemBySlot(EquipmentSlot.HEAD);
         int colorRgb = PilotHelmetWearableItem.getColorRgb(helmetStack);

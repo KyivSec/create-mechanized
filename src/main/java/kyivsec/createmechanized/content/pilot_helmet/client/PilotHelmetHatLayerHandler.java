@@ -1,7 +1,7 @@
-package kyivsec.createmechanized.client;
+package kyivsec.createmechanized.content.pilot_helmet.client;
 
 import kyivsec.createmechanized.CreateMechanizedMod;
-import kyivsec.createmechanized.PilotHelmetWearableItem;
+import kyivsec.createmechanized.content.pilot_helmet.PilotHelmetWearableItem;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;

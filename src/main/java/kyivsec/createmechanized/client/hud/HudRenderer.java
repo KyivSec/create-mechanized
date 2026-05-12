@@ -9,9 +9,9 @@ import java.util.Locale;
 
 public final class HudRenderer {
 
-    private static int COLOR_HUD = 0xFF000000 | kyivsec.createmechanized.PilotHelmetColor.DEFAULT_RGB;
-    private static int COLOR_HUD_DIM = 0xCC000000 | kyivsec.createmechanized.PilotHelmetColor.DEFAULT_RGB;
-    private static int COLOR_HUD_FAINT = 0x99000000 | kyivsec.createmechanized.PilotHelmetColor.DEFAULT_RGB;
+    private static int COLOR_HUD = 0xFF000000 | kyivsec.createmechanized.CreateMechanizedConfig.DEFAULT_RGB;
+    private static int COLOR_HUD_DIM = 0xCC000000 | kyivsec.createmechanized.CreateMechanizedConfig.DEFAULT_RGB;
+    private static int COLOR_HUD_FAINT = 0x99000000 | kyivsec.createmechanized.CreateMechanizedConfig.DEFAULT_RGB;
 
     private static void setPalette(int rgb) {
         int rgbOnly = rgb & 0xFFFFFF;
