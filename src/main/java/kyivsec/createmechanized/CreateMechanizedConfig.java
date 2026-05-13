@@ -15,6 +15,11 @@ public final class CreateMechanizedConfig {
 
     public static final Map<String, ModConfigSpec.ConfigValue<String>> HELMET_DYE_COLORS = new LinkedHashMap<>();
 
+    public static ModConfigSpec.IntValue ALTITUDE_WARN_METERS;
+    public static ModConfigSpec.IntValue PULL_UP_WARN_METERS;
+    public static ModConfigSpec.DoubleValue FUEL_LOW_THRESHOLD;
+    public static ModConfigSpec.IntValue WARNING_COOLDOWN_TICKS;
+
     private static final Map<String, String> DISPLAY_NAMES = new LinkedHashMap<>();
 
     private static volatile Map<Integer, String> rgbToDyeId;
@@ -49,6 +54,17 @@ public final class CreateMechanizedConfig {
             HELMET_DYE_COLORS.put(dyeItemId, COMMON_BUILDER.define(dyeName, defaultHex));
             DISPLAY_NAMES.put(dyeItemId, displayName);
         }
+        COMMON_BUILDER.pop();
+
+        COMMON_BUILDER.push("voiceWarnings");
+        COMMON_BUILDER.comment("Altitude in metres below which the altitude warning fires.");
+        ALTITUDE_WARN_METERS = COMMON_BUILDER.defineInRange("altitudeWarnMeters", 100, 0, Integer.MAX_VALUE);
+        COMMON_BUILDER.comment("Altitude in metres below which the pull-up warning fires (requires nose-down pitch).");
+        PULL_UP_WARN_METERS = COMMON_BUILDER.defineInRange("pullUpWarnMeters", 50, 0, Integer.MAX_VALUE);
+        COMMON_BUILDER.comment("Fill fraction (0.0–1.0) below which the fuel-low warning fires for a tracked container.");
+        FUEL_LOW_THRESHOLD = COMMON_BUILDER.defineInRange("fuelLowThreshold", 0.2, 0.0, 1.0);
+        COMMON_BUILDER.comment("Minimum game-ticks between repeated plays of the same warning (20 ticks = 1 second).");
+        WARNING_COOLDOWN_TICKS = COMMON_BUILDER.defineInRange("warningCooldownTicks", 200, 1, Integer.MAX_VALUE);
         COMMON_BUILDER.pop();
 
         COMMON_SPEC = COMMON_BUILDER.build();

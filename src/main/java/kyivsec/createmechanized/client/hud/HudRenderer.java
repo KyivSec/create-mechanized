@@ -1,5 +1,6 @@
 package kyivsec.createmechanized.client.hud;
 
+import kyivsec.createmechanized.client.hud.layout.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,37 +20,12 @@ public final class HudRenderer {
     private record Rung(float rungRad, int halfLength, boolean labelled, String label, boolean dashed, int tickSign) {
     }
 
-    private static final float PIXELS_PER_RAD = 200.0f;
-    private static final int PITCH_BAND_HALF = 95;
-    private static final int HDG_TAPE_PX_PER_DEG = 4;
-    private static final int HDG_TAPE_HALF_WIDTH = 60;
-    private static final int BANK_ARC_RADIUS = 78;
-    private static final float BANK_ARC_HALF = (float) Math.toRadians(60.0);
-    private static final int FPM_RADIUS = 6;
-
     private static final int[] BANK_MAJOR_DEG = {-60, -45, -30, -20, -10, 0, 10, 20, 30, 45, 60};
-
-    private static final Rung[] LADDER_RUNGS = buildLadderRungs();
-
-    private static Rung[] buildLadderRungs() {
-        Rung[] arr = new Rung[1 + 18 * 2];
-        arr[0] = new Rung(0.0f, 90, true, "0", false, 1);
-        int idx = 1;
-        for (int deg = 5; deg <= 90; deg += 5) {
-            float theta = (float) Math.toRadians(deg);
-            boolean labelled = (deg % 10 == 0);
-            int halfLength = labelled ? 55 : 28;
-            String label = labelled ? Integer.toString(deg) : "";
-            arr[idx++] = new Rung(theta,  halfLength, labelled, label, false, 1);
-            arr[idx++] = new Rung(-theta, halfLength, labelled, label, true,  -1);
-        }
-        return arr;
-    }
 
     private HudRenderer() {
     }
 
-    public static void draw(GuiGraphics graphics, FlightData data, int colorRgb) {
+    public static void draw(GuiGraphics graphics, FlightData data, int colorRgb, HudLayout layout) {
         Palette p = Palette.fromRgb(colorRgb);
         int w = graphics.guiWidth();
         int h = graphics.guiHeight();
@@ -57,15 +33,29 @@ public final class HudRenderer {
         int cy = h / 2;
         Font font = Minecraft.getInstance().font;
 
-        drawBoresight(graphics, cx, cy, p);
-        drawAltitudeBox(graphics, font, w, cy, data.altitude(), p);
+        if (layout.boresight().enabled()) {
+            drawBoresight(graphics, cx, cy, p);
+        }
+        if (layout.altitudeBox().enabled()) {
+            drawAltitudeBox(graphics, font, w, cy, data.altitude(), layout.altitudeBox(), p);
+        }
 
         if (!data.minimal()) {
-            drawSpeedBox(graphics, font, cy, data.speedMs(), p);
-            drawPitchLadder(graphics, font, cx, cy, data.pitchRad(), data.rollRad(), p);
-            drawBankScale(graphics, cx, cy, data.rollRad(), p);
-            drawHeadingTape(graphics, font, cx, data.headingRad(), p);
-            drawFlightPathMarker(graphics, cx, cy, data, p);
+            if (layout.speedBox().enabled()) {
+                drawSpeedBox(graphics, font, cy, data.speedMs(), layout.speedBox(), p);
+            }
+            if (layout.pitchLadder().enabled()) {
+                drawPitchLadder(graphics, font, cx, cy, data.pitchRad(), data.rollRad(), layout.pitchLadder(), p);
+            }
+            if (layout.bankScale().enabled()) {
+                drawBankScale(graphics, cx, cy, data.rollRad(), layout.bankScale(), p);
+            }
+            if (layout.headingTape().enabled()) {
+                drawHeadingTape(graphics, font, cx, data.headingRad(), layout.headingTape(), p);
+            }
+            if (layout.flightPathMarker().enabled()) {
+                drawFlightPathMarker(graphics, cx, cy, data, layout.flightPathMarker(), p);
+            }
         }
     }
 
@@ -77,24 +67,25 @@ public final class HudRenderer {
         g.fill(cx - 1, cy, cx + 1, cy + 1, p.primary());
     }
 
-    private static void drawAltitudeBox(GuiGraphics g, Font font, int screenWidth, int cy, double altitude, Palette p) {
+    private static void drawAltitudeBox(GuiGraphics g, Font font, int screenWidth, int cy, double altitude,
+                                        AltitudeBoxSettings s, Palette p) {
         String text = String.format(Locale.ROOT, "%5.0f", altitude);
         String label = "ALT M";
         int boxW = Math.max(font.width(text), font.width(label)) + 12;
         int boxH = 22;
-        int x = screenWidth - boxW - 16;
+        int x = screenWidth - boxW - s.rightInset();
         int y = cy - boxH / 2;
         drawBracket(g, x, y, boxW, boxH, true, p);
         g.drawString(font, text, x + 6, y + 3, p.primary(), false);
         g.drawString(font, label, x + 6, y + 12, p.dim(), false);
     }
 
-    private static void drawSpeedBox(GuiGraphics g, Font font, int cy, double ms, Palette p) {
+    private static void drawSpeedBox(GuiGraphics g, Font font, int cy, double ms, SpeedBoxSettings s, Palette p) {
         String text = String.format(Locale.ROOT, "%5.1f", ms);
         String label = "M/S";
         int boxW = Math.max(font.width(text), font.width(label)) + 12;
         int boxH = 22;
-        int x = 16;
+        int x = s.leftInset();
         int y = cy - boxH / 2;
         drawBracket(g, x, y, boxW, boxH, false, p);
         g.drawString(font, text, x + 6, y + 3, p.primary(), false);
@@ -115,20 +106,40 @@ public final class HudRenderer {
         }
     }
 
-    private static void drawPitchLadder(GuiGraphics g, Font font, int cx, int cy, float pitchRad, float rollRad, Palette p) {
+    private static void drawPitchLadder(GuiGraphics g, Font font, int cx, int cy,
+                                        float pitchRad, float rollRad,
+                                        PitchLadderSettings s, Palette p) {
         float cos = Mth.cos(-rollRad);
         float sin = Mth.sin(-rollRad);
-        for (Rung r : LADDER_RUNGS) {
-            drawLadderRung(g, font, cx, cy, pitchRad, cos, sin, r, p);
+        Rung[] rungs = buildLadderRungs(s.stepDeg(), s.maxDeg());
+        for (Rung r : rungs) {
+            drawLadderRung(g, font, cx, cy, pitchRad, cos, sin, r, s, p);
         }
+    }
+
+    private static Rung[] buildLadderRungs(int stepDeg, int maxDeg) {
+        int steps = (stepDeg > 0 && maxDeg >= stepDeg) ? maxDeg / stepDeg : 0;
+        Rung[] arr = new Rung[1 + steps * 2];
+        arr[0] = new Rung(0.0f, 90, true, "0", false, 1);
+        int idx = 1;
+        for (int deg = stepDeg; deg <= maxDeg; deg += stepDeg) {
+            float theta = (float) Math.toRadians(deg);
+            boolean labelled = (deg % 10 == 0);
+            int halfLength = labelled ? 55 : 28;
+            String label = labelled ? Integer.toString(deg) : "";
+            arr[idx++] = new Rung(theta,  halfLength, labelled, label, false, 1);
+            arr[idx++] = new Rung(-theta, halfLength, labelled, label, true,  -1);
+        }
+        return arr;
     }
 
     private static void drawLadderRung(GuiGraphics g, Font font,
                                        int cx, int cy, float pitchRad,
-                                       float cos, float sin, Rung r, Palette p) {
-        float vOff = (r.rungRad() - pitchRad) * PIXELS_PER_RAD;
+                                       float cos, float sin, Rung r,
+                                       PitchLadderSettings s, Palette p) {
+        float vOff = (r.rungRad() - pitchRad) * s.pixelsPerRad();
 
-        float fade = 1.0f - Mth.clamp(Math.abs(vOff) / (float) PITCH_BAND_HALF, 0.0f, 1.0f);
+        float fade = 1.0f - Mth.clamp(Math.abs(vOff) / (float) s.fadeHalfPx(), 0.0f, 1.0f);
         if (fade <= 0.02f) return;
         int color = applyAlpha(p.primary(), fade);
 
@@ -155,28 +166,31 @@ public final class HudRenderer {
         }
     }
 
-    private static void drawBankScale(GuiGraphics g, int cx, int cy, float rollRad, Palette p) {
-        for (float a = -BANK_ARC_HALF; a <= BANK_ARC_HALF; a += (float) Math.toRadians(2.0)) {
-            int px = cx + Math.round(Mth.sin(a) * BANK_ARC_RADIUS);
-            int py = cy - Math.round(Mth.cos(a) * BANK_ARC_RADIUS);
+    private static void drawBankScale(GuiGraphics g, int cx, int cy, float rollRad,
+                                      BankScaleSettings s, Palette p) {
+        float arcHalf = (float) Math.toRadians(s.halfDeg());
+        for (float a = -arcHalf; a <= arcHalf; a += (float) Math.toRadians(2.0)) {
+            int px = cx + Math.round(Mth.sin(a) * s.radius());
+            int py = cy - Math.round(Mth.cos(a) * s.radius());
             g.fill(px, py, px + 1, py + 1, p.faint());
         }
 
         for (int deg : BANK_MAJOR_DEG) {
+            if (Math.abs(deg) > s.halfDeg()) continue;
             float a = (float) Math.toRadians(deg);
-            int outer = BANK_ARC_RADIUS + (deg == 0 ? 8 : (Math.abs(deg) >= 30 ? 6 : 4));
-            int x1 = cx + Math.round(Mth.sin(a) * BANK_ARC_RADIUS);
-            int y1 = cy - Math.round(Mth.cos(a) * BANK_ARC_RADIUS);
+            int outer = s.radius() + (deg == 0 ? 8 : (Math.abs(deg) >= 30 ? 6 : 4));
+            int x1 = cx + Math.round(Mth.sin(a) * s.radius());
+            int y1 = cy - Math.round(Mth.cos(a) * s.radius());
             int x2 = cx + Math.round(Mth.sin(a) * outer);
             int y2 = cy - Math.round(Mth.cos(a) * outer);
             drawLineThin(g, x1, y1, x2, y2, p.primary());
         }
 
-        float ptr = Mth.clamp(rollRad, -BANK_ARC_HALF, BANK_ARC_HALF);
+        float ptr = Mth.clamp(rollRad, -arcHalf, arcHalf);
         float pSin = Mth.sin(ptr);
         float pCos = Mth.cos(ptr);
-        int tipR = BANK_ARC_RADIUS - 3;
-        int baseR = BANK_ARC_RADIUS - 10;
+        int tipR = s.radius() - 3;
+        int baseR = s.radius() - 10;
         int tipX = cx + Math.round(pSin * tipR);
         int tipY = cy - Math.round(pCos * tipR);
         int base1X = cx + Math.round((pSin * baseR) - (pCos * 4));
@@ -186,19 +200,20 @@ public final class HudRenderer {
         fillTriangle(g, tipX, tipY, base1X, base1Y, base2X, base2Y, p.primary());
     }
 
-    private static void drawHeadingTape(GuiGraphics g, Font font, int cx, float headingRad, Palette p) {
-        int tapeY = 21;
+    private static void drawHeadingTape(GuiGraphics g, Font font, int cx, float headingRad,
+                                        HeadingTapeSettings s, Palette p) {
+        int tapeY = s.tapeY();
         int tickBaseY = tapeY + 4;
         float headingDeg = (float) Math.toDegrees(headingRad);
 
-        g.fill(cx - HDG_TAPE_HALF_WIDTH - 1, tapeY, cx + HDG_TAPE_HALF_WIDTH + 1, tapeY + 1, p.faint());
+        g.fill(cx - s.halfWidthPx() - 1, tapeY, cx + s.halfWidthPx() + 1, tapeY + 1, p.faint());
 
-        int minDeg = (int) Math.floor(headingDeg - (HDG_TAPE_HALF_WIDTH / (float) HDG_TAPE_PX_PER_DEG));
-        int maxDeg = (int) Math.ceil(headingDeg + (HDG_TAPE_HALF_WIDTH / (float) HDG_TAPE_PX_PER_DEG));
+        int minDeg = (int) Math.floor(headingDeg - (s.halfWidthPx() / (float) s.pxPerDeg()));
+        int maxDeg = (int) Math.ceil(headingDeg + (s.halfWidthPx() / (float) s.pxPerDeg()));
         for (int d = (minDeg / 5) * 5; d <= maxDeg; d += 5) {
             int normalised = ((d % 360) + 360) % 360;
-            int x = cx + Math.round((d - headingDeg) * HDG_TAPE_PX_PER_DEG);
-            if (x < cx - HDG_TAPE_HALF_WIDTH || x > cx + HDG_TAPE_HALF_WIDTH) continue;
+            int x = cx + Math.round((d - headingDeg) * s.pxPerDeg());
+            if (x < cx - s.halfWidthPx() || x > cx + s.halfWidthPx()) continue;
             boolean major = (normalised % 30 == 0);
             int tickH = major ? 6 : 3;
             g.fill(x, tickBaseY, x + 1, tickBaseY + tickH, p.primary());
@@ -234,7 +249,8 @@ public final class HudRenderer {
         };
     }
 
-    private static void drawFlightPathMarker(GuiGraphics g, int cx, int cy, FlightData d, Palette p) {
+    private static void drawFlightPathMarker(GuiGraphics g, int cx, int cy, FlightData d,
+                                             FlightPathMarkerSettings s, Palette p) {
         double fwd = d.bodyVelZ();
         double speed = Math.sqrt(d.bodyVelX() * d.bodyVelX() + d.bodyVelY() * d.bodyVelY() + fwd * fwd);
         if (speed < 1.0e-4) return;
@@ -243,17 +259,21 @@ public final class HudRenderer {
         double yawDrift = Math.atan2(d.bodyVelX(), denom);
         double pitchDrift = Math.atan2(d.bodyVelY(), denom);
 
-        double maxRad = Math.toRadians(15.0);
+        double maxRad = Math.toRadians(s.maxDriftDeg());
         yawDrift = Mth.clamp(yawDrift, -maxRad, maxRad);
         pitchDrift = Mth.clamp(pitchDrift, -maxRad, maxRad);
 
-        int fx = cx + (int) Math.round(yawDrift * PIXELS_PER_RAD);
-        int fy = cy - (int) Math.round(pitchDrift * PIXELS_PER_RAD);
+        // pixels_per_rad from pitch ladder settings is reused here for consistency
+        float pxPerRad = HudLayoutLoader.getCurrent().pitchLadder().pixelsPerRad();
 
-        drawHollowRect(g, fx - FPM_RADIUS, fy - FPM_RADIUS, FPM_RADIUS * 2 + 1, FPM_RADIUS * 2 + 1, p.primary());
-        g.fill(fx - FPM_RADIUS - 8, fy, fx - FPM_RADIUS - 1, fy + 1, p.primary());
-        g.fill(fx + FPM_RADIUS + 1, fy, fx + FPM_RADIUS + 8, fy + 1, p.primary());
-        g.fill(fx, fy - FPM_RADIUS - 4, fx + 1, fy - FPM_RADIUS - 1, p.primary());
+        int fx = cx + (int) Math.round(yawDrift * pxPerRad);
+        int fy = cy - (int) Math.round(pitchDrift * pxPerRad);
+
+        int r = s.radius();
+        drawHollowRect(g, fx - r, fy - r, r * 2 + 1, r * 2 + 1, p.primary());
+        g.fill(fx - r - 8, fy, fx - r - 1, fy + 1, p.primary());
+        g.fill(fx + r + 1, fy, fx + r + 8, fy + 1, p.primary());
+        g.fill(fx, fy - r - 4, fx + 1, fy - r - 1, p.primary());
         g.fill(fx, fy, fx + 1, fy + 1, p.primary());
     }
 

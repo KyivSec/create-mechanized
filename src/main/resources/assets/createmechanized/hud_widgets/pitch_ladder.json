@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "pixels_per_rad": 200.0,
+  "fade_half_px": 95,
+  "step_deg": 5,
+  "max_deg": 90
+}

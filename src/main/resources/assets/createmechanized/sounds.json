@@ -1,0 +1,17 @@
+{
+  "warnings.altitude": {
+    "sounds": [
+      "createmechanized:warnings/altitude"
+    ]
+  },
+  "warnings.pull_up": {
+    "sounds": [
+      "createmechanized:warnings/pull_up"
+    ]
+  },
+  "warnings.fuel_low": {
+    "sounds": [
+      "createmechanized:warnings/fuel_low"
+    ]
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "enabled": true,
+  "radius": 6,
+  "max_drift_deg": 15.0
+}

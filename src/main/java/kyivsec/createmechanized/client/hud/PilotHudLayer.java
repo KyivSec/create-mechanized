@@ -59,13 +59,15 @@ public final class PilotHudLayer implements LayeredDraw.Layer {
         int colorRgb = PilotHelmetWearableItem.getColorRgb(helmetStack);
 
         HudRenderer.Palette palette = HudRenderer.Palette.fromRgb(colorRgb);
-        HudRenderer.draw(graphics, data, colorRgb);
+        HudRenderer.draw(graphics, data, colorRgb, HudLayoutLoader.getCurrent());
 
-        drawContainerList(graphics, mc, helmetStack, palette);
+        TrackedContainerList containerList = helmetStack.get(ModDataComponents.TRACKED_CONTAINERS.get());
+        drawContainerList(graphics, mc, containerList, palette);
+
+        VoiceWarningSystem.tick(player, data, containerList);
     }
 
-    private static void drawContainerList(GuiGraphics graphics, Minecraft mc, ItemStack helmetStack, HudRenderer.Palette palette) {
-        TrackedContainerList list = helmetStack.get(ModDataComponents.TRACKED_CONTAINERS.get());
+    private static void drawContainerList(GuiGraphics graphics, Minecraft mc, TrackedContainerList list, HudRenderer.Palette palette) {
         if (list == null) return;
         List<TrackedContainer> entries = list.entries();
         if (entries.isEmpty()) return;
